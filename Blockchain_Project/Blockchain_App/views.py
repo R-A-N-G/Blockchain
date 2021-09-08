@@ -73,7 +73,7 @@ def consensus():
 
 
 
-####_____TEST__VIEW_____####
+####_____TEST__VIEW__git___####
 def test(request):
     if request.method == "GET":
         response = {'message': 'WORKING'}
