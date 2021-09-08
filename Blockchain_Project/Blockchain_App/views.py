@@ -17,17 +17,35 @@ class Blockchain:
         self.chain = []
         self.nodes = set()
 
-        # Create the genesis block
+        #The genesis block
         self.new_block(previous_hash='1', proof=100)
 
     def new_block(self, previous_hash, proof):
-        pass
+        block = {
+            "index" : len(self.chain) + 1,
+            "timestamp" : ctime(),
+            "transactions" : self.current_transactions,
+            "proof": proof,
+            "previous_hash" : previous_hash,
+        }
 
-    def last_block():
-        pass
+        self.current_transactions = []
+        self.chain.append(block)
+        return block
 
-    def new_transactions():
-        pass
+
+    def last_block(self):
+        return self.chain[-1]
+        
+
+    def new_transactions(self, sender, reciever, amount):
+        self.current_transactions.append({
+            "sender" : sender,
+            "reciever" : reciever,
+            "amount" : amount
+        })
+        return self.last_block["index"] + 1
+        
 
     def hash():
         pass
@@ -38,19 +56,36 @@ class Blockchain:
     def valid_proof():
         pass
 
-    def reguster_node():
-        pass
+    def register_node(self, address):
+        parsed_url = urlparse(address)
+        if parsed_url.netloc:
+            self.nodes.add(parsed_url)
+        elif parsed_url.path:
+            self.nodes.add(parsed_url.path)
+        else:
+            raise ValueError("Please Enter a valid URL")
+        
 
     def resolve_conflicts():
         pass
 
-    def valid_chain():
+    def valid_chain(self, chain):
+        last_block = chain[0]
+        current_index = 1
+
+        while current_index < len(chain):
+            block = chain[current_index]
+            print(f'{last_block}')
+            print(f'{block}')
+            print("\n________\n")
         pass
 
 
 
 ####_____object_____####
 blockchain = Blockchain()
+
+
 
 def full_chain(request):
     if request.method == 'GET':
