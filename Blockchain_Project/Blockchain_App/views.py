@@ -2,8 +2,8 @@ from django.shortcuts import render
 from django.http import JsonResponse, HttpResponse, HttpRequest, request, response
 from django.views.decorators.csrf import csrf_exempt
 import hashlib
-import json
-from time import time, ctime
+import json, datetime
+from time import time, ctime 
 from urllib.parse import urlparse
 from uuid import uuid4
 
@@ -23,7 +23,7 @@ class Blockchain:
     def new_block(self, proof, previous_hash):
         block = {
             "index" : len(self.chain) + 1,
-            "timestamp" : ctime(),
+            "timestamp" : str(datetime.datetime.now()),
             "transactions" : self.current_transactions,
             "proof": proof,
             "previous_hash" : previous_hash,
