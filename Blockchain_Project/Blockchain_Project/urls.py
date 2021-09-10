@@ -16,10 +16,12 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from Blockchain_App import views
-from Blockchain_App.views import test , full_chain
+from Blockchain_App.views import test , full_chain, new_transcations, mine
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('test/', views.test, name="test"),
     path('chain/', views.full_chain, name="chain"),
+    path('transcations/new/', views.new_transcations, name="new_transcations"),
+    path('mine/', views.mine, name="mine"),
 ]
