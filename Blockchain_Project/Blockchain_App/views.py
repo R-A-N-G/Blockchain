@@ -158,6 +158,7 @@ def mine(request):
 
 def register_node():
     pass
+    pass
 
 def consensus():
     pass
