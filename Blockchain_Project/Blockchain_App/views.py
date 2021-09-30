@@ -1,13 +1,14 @@
 from django.shortcuts import render
-from django.http import JsonResponse, HttpResponse, HttpRequest, request, response
+from django.http import JsonResponse, HttpResponse, request, response
 from django.views.decorators.csrf import csrf_exempt
 import hashlib
-import json, datetime
-from time import time, ctime 
+import json
+import time
+from time import ctime
 from urllib.parse import urlparse
 from uuid import uuid4
-
 import requests
+from collections import Counter
 
 
 
@@ -23,12 +24,14 @@ class Blockchain:
     def new_block(self, proof, previous_hash):
         block = {
             "index" : len(self.chain) + 1,
-            "timestamp" : str(datetime.datetime.now()),
+            "timestamp" : time.time(),
             "transactions" : self.current_transactions,
             "proof": proof,
+            # "hash" : proof,
+            # "hash" : self.hash(proof),
             "previous_hash" : previous_hash,
         }
-
+        block['hash'] = self.hash(block) 
         self.current_transactions = []
         self.chain.append(block)
         return block
@@ -38,11 +41,13 @@ class Blockchain:
         return self.chain[-1]
         
 
-    def new_transactions(self, sender, reciever, amount):
+    def new_transaction(self, sender, reciever, amount):
         self.current_transactions.append({
             "sender" : sender,
             "receiver" : reciever,
             "amount" : amount
+            # hash : "",
+            # signature : "",
         })
         next_block = self.last_block()
         return  next_block["index"] + 1
@@ -80,8 +85,44 @@ class Blockchain:
             raise ValueError("Please Enter a valid Node Address")
         
 
-    def resolve_conflicts():
-        pass
+    def resolve_conflicts(self):
+
+        
+        neighbours = self.nodes
+        new_chain = None
+        tests = [] 
+        i = 0 ; new = None ; n = None
+        max_length = len(self.chain)
+
+        
+        for node in neighbours:
+            response = requests.get(f'http://{node}/chain')
+
+            if response.status_code == 200:
+                length = response.json()['length']
+                chain = response.json()['chain']
+                t = (chain[-1])
+                
+                tests.append(t['timestamp'])
+                i = tests.index(min(tests))
+                n = list(neighbours)
+                new = requests.get(f'http://{n[i]}/chain')
+                if self.valid_chain(new.json()['chain']):
+                    self.chain = new.json()['chain']
+                    new_chain = chain
+               
+                # if length > max_length and self.valid_chain(chain):
+                #     max_length = length
+                #     new_chain = chain
+
+       
+        if new_chain:
+            self.chain = new_chain
+            return True
+
+        return False
+
+        
 
     def valid_chain(self, chain):
         last_block = chain[0]
@@ -89,10 +130,23 @@ class Blockchain:
 
         while current_index < len(chain):
             block = chain[current_index]
-            print(f'{last_block}')
-            print(f'{block}')
-            print("\n________\n")
-        pass
+            # print(f'{last_block}')
+            # print(f'{block}')
+            # print("\n________\n")
+
+            last_block_hash = self.hash(last_block)
+            if block['previous_hash'] != last_block_hash:
+                return False
+
+            # Check that the Proof of Work is correct
+            if not self.valid_proof(last_block['proof'], block['proof'], last_block_hash):
+                return False
+
+            last_block = block
+            current_index += 1
+
+        return True
+
 
 
 
@@ -105,8 +159,8 @@ node_address = str(uuid4()).replace('-','')
 def full_chain(request):
     if request.method == 'GET':
         response = {
-                    'chain': blockchain.chain,
-                    'length' : len(blockchain.chain),    
+                    'length' : len(blockchain.chain), 
+                    'chain': blockchain.chain,    
                     }
     return JsonResponse(response)
 
@@ -115,57 +169,98 @@ def full_chain(request):
 def new_transcations(request):
     if request.method == "POST":
         values = json.loads(request.body)
-
+        print(time.time())
         required = ['sender','receiver','amount']
         if not all (k in values for k in required):
-            return "Some Values are Missing", 400
-        index = blockchain.new_transactions(values['sender'], values['receiver'], values['amount'])
+            response = {'message' : 'Some Values are Missing'}
+        else:    
+            index = blockchain.new_transaction(values['sender'], values['receiver'], values['amount'])
+            tx_no = len(blockchain.current_transactions)
 
-        response = {'message' : f'Your Trasaction will be added to Block {index}'}
-        # print(blockchain.current_transactions)
+            response = {'message' : f'Your Trasaction will be added to Block {index} as {tx_no} transaction'}
+
+        mine()
     else: response = {'message' : 'Method Not Allowed'}
     return JsonResponse(response)
 
 
-def mine(request):
+def mine():
+
+    if len(blockchain.current_transactions) == 0:
+        response = {    'message' : "No Transactions to Mine",   }
+    else:
+        last_block = blockchain.last_block()
+        proof = blockchain.proof_of_work(last_block)
+
+        blockchain.new_transaction(
+            sender = '0',
+            reciever = node_address,
+            amount = 1,
+        )
+
+        # previous_hash = blockchain.hash(last_block)
+        previous_hash = last_block['hash']
+        block = blockchain.new_block(proof, previous_hash)
+        # print(block)
+
+        response = {
+            'message' : 'New Block Forged',
+            'index' : block['index'],
+            'trnsaction' : block['transactions'],
+            'proof' : block['proof'],
+            'previous_hash' : block['previous_hash'] 
+        }
+        print("mine",">>>>>>", block['proof'])
+        neighbours = blockchain.nodes
+        for node in neighbours:
+            consensus = requests.get(f'http://{node}/nodes/resolve')
+    return JsonResponse(response)
+
+@csrf_exempt
+def register_node(request):
+    if request.method == "POST":
+        values = json.loads(request.body)
+        print(blockchain.nodes)
+        nodes = values.get('nodes')
+
+        if nodes is None:
+            response = { 'message' : 'Error :- Invalid list of  nodes' }
+        for node in nodes:
+            blockchain.register_node(node)
+        response = {
+            'message' : 'new nodes added',
+            'total nodes' : list(blockchain.nodes),
+        }
+        
+    else: response = {'message' : 'Method Not Allowed'}
+    return JsonResponse(response)
+    
+
+def consensus(request):
+    if request.method == "GET":
+        replaced = blockchain.resolve_conflicts()
+        response = {
+            'message': 'Nodes conflict is resolved',
+            'chain': blockchain.chain
+        }
+        blockchain.current_transactions = []    
+    return JsonResponse(response)    
+
+
+def UTXO_test(request):
     if request.method == 'GET':
+        
+        chain = blockchain.chain
+        for i in chain:
+            j = i["transactions"]
+            for k in j:
+                print(k["sender"])
 
-        if len(blockchain.current_transactions) == 0:
-            response = {    'message' : "No Transactions to Mine",   }
-        else:
-            last_block = blockchain.last_block()
-            proof = blockchain.proof_of_work(last_block)
-
-            blockchain.new_transactions(
-                sender = '0',
-                reciever = node_address,
-                amount = 1,
-            )
-
-            previous_hash = blockchain.hash(last_block)
-            block = blockchain.new_block(proof, previous_hash)
-            # print(block)
-
-            response = {
-                'message' : 'New Block Forged',
-                'index' : block['index'],
-                'trnsaction' : block['transactions'],
-                'proof' : block['proof'],
-                'previous_hash' : block['previous_hash'] 
-            }
-    else: response = {'message' : 'Method Not Allowed'}
+        response = {'message' : 'Done'}
     return JsonResponse(response)
 
-def register_node():
-    pass
-    pass
 
-def consensus():
-    pass
-
-
-
-####_____TEST__VIEW__git_____####
+####_____TEST__VIEW__get_____####
 def test(request):
     if request.method == "GET":
         response = {'message': 'WORKING'}
