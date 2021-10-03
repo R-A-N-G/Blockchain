@@ -17,6 +17,7 @@ class Blockchain:
         self.current_transactions = []
         self.chain = []
         self.nodes = set()
+        self.node_id_list = set()
 
         #The genesis block
         self.new_block(previous_hash='1', proof=100)
@@ -27,8 +28,6 @@ class Blockchain:
             "timestamp" : time.time(),
             "transactions" : self.current_transactions,
             "proof": proof,
-            # "hash" : proof,
-            # "hash" : self.hash(proof),
             "previous_hash" : previous_hash,
         }
         block['hash'] = self.hash(block) 
@@ -83,6 +82,15 @@ class Blockchain:
             self.nodes.add(parsed_url.path)
         else:
             raise ValueError("Please Enter a valid Node Address")
+
+        neighbours = self.nodes
+        
+        for node in neighbours:
+            response = requests.get(f'http://{node}/p2p')
+            a = str(node) + "-->>" + str(response.json()['message'])
+            self.node_id_list.add(a)
+        
+
         
 
     def resolve_conflicts(self):
@@ -90,7 +98,7 @@ class Blockchain:
         
         neighbours = self.nodes
         new_chain = None
-        tests = [] 
+        tests = [] ; l = []
         i = 0 ; new = None ; n = None
         max_length = len(self.chain)
 
@@ -99,25 +107,41 @@ class Blockchain:
             response = requests.get(f'http://{node}/chain')
 
             if response.status_code == 200:
+                # length = response.json()['length']
                 length = response.json()['length']
                 chain = response.json()['chain']
                 t = (chain[-1])
-                
-                tests.append(t['timestamp'])
-                i = tests.index(min(tests))
-                n = list(neighbours)
-                new = requests.get(f'http://{n[i]}/chain')
-                if self.valid_chain(new.json()['chain']):
-                    self.chain = new.json()['chain']
-                    new_chain = chain
-               
-                # if length > max_length and self.valid_chain(chain):
-                #     max_length = length
-                #     new_chain = chain
 
-       
+                l.append(length)
+                if len(set(l)) < len(l):
+                    for i in range(len(l)):
+                        if l[i] not in set(l):
+                            l[i] = 0
+
+                tests.append(t['timestamp'])
+                
+                print(l)
+        
+                if length > max_length and self.valid_chain(chain):
+                    max_length = length
+                    self.chain = new_chain
+                    new_chain = chain
+
+        i = tests.index(min(tests))
+        n = list(neighbours)
+        new = requests.get(f'http://{n[i]}/chain')
+
+        print(self.valid_chain(new.json()['chain']))
+        print("First one ", tests, +min(tests))
+        # print(new.json()['chain'])
+
+        if self.valid_chain(new.json()['chain']) and len(new.json()['chain']) == max_length:
+            print(">>>>>>here>>>>>>>")
+            self.chain = new.json()['chain']
+            new_chain = chain
+        
         if new_chain:
-            self.chain = new_chain
+            # self.chain = new_chain
             return True
 
         return False
@@ -130,17 +154,14 @@ class Blockchain:
 
         while current_index < len(chain):
             block = chain[current_index]
-            # print(f'{last_block}')
-            # print(f'{block}')
-            # print("\n________\n")
 
             last_block_hash = self.hash(last_block)
-            if block['previous_hash'] != last_block_hash:
-                return False
+            if block['previous_hash'] != last_block['hash']:
+                return False 
 
             # Check that the Proof of Work is correct
             if not self.valid_proof(last_block['proof'], block['proof'], last_block_hash):
-                return False
+                return False 
 
             last_block = block
             current_index += 1
@@ -169,14 +190,14 @@ def full_chain(request):
 def new_transcations(request):
     if request.method == "POST":
         values = json.loads(request.body)
-        print(time.time())
+        print("Time_Recieved >>>>",time.time())
         required = ['sender','receiver','amount']
         if not all (k in values for k in required):
             response = {'message' : 'Some Values are Missing'}
         else:    
             index = blockchain.new_transaction(values['sender'], values['receiver'], values['amount'])
             tx_no = len(blockchain.current_transactions)
-
+            print(blockchain.current_transactions)
             response = {'message' : f'Your Trasaction will be added to Block {index} as {tx_no} transaction'}
 
         mine()
@@ -210,7 +231,7 @@ def mine():
             'proof' : block['proof'],
             'previous_hash' : block['previous_hash'] 
         }
-        print("mine",">>>>>>", block['proof'])
+        print("mined_>>>>>>", time.time())
         neighbours = blockchain.nodes
         for node in neighbours:
             consensus = requests.get(f'http://{node}/nodes/resolve')
@@ -229,7 +250,7 @@ def register_node(request):
             blockchain.register_node(node)
         response = {
             'message' : 'new nodes added',
-            'total nodes' : list(blockchain.nodes),
+            'total nodes' : list(blockchain.node_id_list),
         }
         
     else: response = {'message' : 'Method Not Allowed'}
@@ -238,6 +259,10 @@ def register_node(request):
 
 def consensus(request):
     if request.method == "GET":
+        blockchain.current_transactions = []  
+        neighbours = blockchain.nodes
+        for node in neighbours:
+            response = requests.get(f'http://{node}/chain')
         replaced = blockchain.resolve_conflicts()
         response = {
             'message': 'Nodes conflict is resolved',
@@ -247,16 +272,11 @@ def consensus(request):
     return JsonResponse(response)    
 
 
-def UTXO_test(request):
+def P_2_P(request):
     if request.method == 'GET':
         
-        chain = blockchain.chain
-        for i in chain:
-            j = i["transactions"]
-            for k in j:
-                print(k["sender"])
 
-        response = {'message' : 'Done'}
+        response = {'message' : node_address}
     return JsonResponse(response)
 
 
