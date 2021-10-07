@@ -179,7 +179,15 @@ node_address = str(uuid4()).replace('-','')
 
 def full_chain(request):
     if request.method == 'GET':
+        ret = []
+        for i in blockchain.chain:
+            bc = i['transactions']
+            for j in bc:
+                if j['sender'] == '0':
+                    ret.append(j['receiver'])
+            
         response = {
+                    'receiver' : ret,
                     'length' : len(blockchain.chain), 
                     'chain': blockchain.chain,    
                     }
