@@ -76,12 +76,13 @@ class Blockchain:
 
     def register_node(self, address):
         parsed_url = urlparse(address)
+        print(parsed_url)
         if parsed_url.netloc:
-            self.nodes.add(parsed_url)
+            self.nodes.add(parsed_url.netloc) ; print('1', parsed_url)
         elif parsed_url.path:
-            self.nodes.add(parsed_url.path)
+            self.nodes.add(parsed_url.scheme) ; print('2', parsed_url.path)
         else:
-            raise ValueError("Please Enter a valid Node Address")
+            raise ValueError("Please Enter a valid Node Address") ; print('3')
 
         neighbours = self.nodes
         
@@ -101,7 +102,6 @@ class Blockchain:
         tests = [] ; l = []
         i = 0 ; new = None ; n = None
         max_length = len(self.chain)
-
         
         for node in neighbours:
             response = requests.get(f'http://{node}/chain')
@@ -249,9 +249,8 @@ def mine():
 def register_node(request):
     if request.method == "POST":
         values = json.loads(request.body)
-        print(blockchain.nodes)
         nodes = values.get('nodes')
-
+        print(nodes)
         if nodes is None:
             response = { 'message' : 'Error :- Invalid list of  nodes' }
         for node in nodes:
