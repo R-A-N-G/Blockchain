@@ -19,7 +19,7 @@ class Blockchain:
         self.nodes = set()
         self.node_id_list = set()
 
-        #The genesis block
+        #__The genesis block__#
         self.new_block(previous_hash='1', proof=100)
 
     def new_block(self, proof, previous_hash):
