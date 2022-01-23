@@ -1,3 +1,4 @@
+from tabnanny import check
 from django.shortcuts import render
 from django.http import JsonResponse, HttpResponse, request, response
 from django.views.decorators.csrf import csrf_exempt
@@ -76,15 +77,16 @@ class Blockchain:
 
     def register_node(self, address):
         parsed_url = urlparse(address)
-        print(parsed_url)
-        if parsed_url.netloc:
-            self.nodes.add(parsed_url.netloc) ; print('1', parsed_url)
-        elif parsed_url.path:
-            self.nodes.add(parsed_url.scheme) ; print('2', parsed_url.path)
-        else:
-            raise ValueError("Please Enter a valid Node Address") ; print('3')
-
+        print("****",parsed_url)
+        # if parsed_url.netloc:
+        #     self.nodes.add(parsed_url.netloc) ; print('1', parsed_url)
+        # elif parsed_url.path:
+        #     self.nodes.add(parsed_url.scheme) ; print('2', parsed_url.path)
+        # else:
+        #     raise ValueError("Please Enter a valid Node Address") ; print('3')
+        self.nodes.add(address)
         neighbours = self.nodes
+        print(">>>>>",neighbours)
         
         for node in neighbours:
             response = requests.get(f'http://{node}/p2p')
@@ -180,12 +182,14 @@ node_address = str(uuid4()).replace('-','')
 def full_chain(request):
     if request.method == 'GET':
         ret = []
-        for i in blockchain.chain:
-            bc = i['transactions']
-            for j in bc:
-                if j['sender'] == '0':
-                    ret.append(j['receiver'])
-            
+        
+        try:    
+            for i in blockchain.chain:
+                bc = i['transactions']
+                for j in bc:
+                    if j['sender'] == '0':
+                        ret.append(j['receiver'])
+        except: print(blockchain.chain)
         response = {
                     'receiver' : ret,
                     'length' : len(blockchain.chain), 
@@ -202,6 +206,9 @@ def new_transcations(request):
         required = ['sender','receiver','amount']
         if not all (k in values for k in required):
             response = {'message' : 'Some Values are Missing'}
+        
+#_____________________________________***_________check siganture _________***________________________________________#
+
         else:    
             index = blockchain.new_transaction(values['sender'], values['receiver'], values['amount'])
             tx_no = len(blockchain.current_transactions)
@@ -243,6 +250,27 @@ def mine():
         neighbours = blockchain.nodes
         for node in neighbours:
             consensus = requests.get(f'http://{node}/nodes/resolve')
+
+
+
+#_____________________________________***_________check for minier_________***________________________________________#
+        time.sleep(3)
+        check = blockchain.chain[-1]
+        c_tx = check['transactions']
+        tx_data = {}
+        for i in c_tx:
+            if i['receiver'] == node_address:
+                j=0
+                for i in c_tx:
+                    j+=1
+                    tx_data[f'{j}'] = f"{i['sender']}|{i['receiver']}|{i['amount']}"
+                send_tx = requests.post("http://127.0.0.1:5000/transaction", data=tx_data)
+            else: pass
+            print(tx_data)
+#_____________________***_________if minier is self: >>>> send transaction request_________***________________________#
+        
+
+
     return JsonResponse(response)
 
 @csrf_exempt
