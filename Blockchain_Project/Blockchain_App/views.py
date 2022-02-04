@@ -229,7 +229,7 @@ def mine():
         proof = blockchain.proof_of_work(last_block)
 
         blockchain.new_transaction(
-            sender = '0',
+            sender = "-----BEGIN PUBLIC KEY-----MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDAoQKW8USQXAJptg1gnO8QuMAqvMBOcUJYlQAHKGtfE8S9iKKwlNFS0qhWG8/NHdeV9qxxlzn9r2IPPGeYGNo2CpLwkn/Jz+c+akfRH1wHn06qfXWgxPfRzNPQuGaZm3JtmqtxffboLPVebiKSz3/U7KQ77VFYydvTrD259mOtcwIDAQAB-----END PUBLIC KEY-----",
             reciever = node_address,
             amount = 1,
         )
@@ -264,7 +264,7 @@ def mine():
                 for i in c_tx:
                     j+=1
                     tx_data[f'{j}'] = f"{i['sender']}|{i['receiver']}|{i['amount']}"
-                send_tx = requests.post("http://127.0.0.1:5000/transaction", data=tx_data)
+                send_tx = requests.post("http://127.0.0.1:8000/transaction", data=tx_data)
             else: pass
             print(tx_data)
 #_____________________***_________if minier is self: >>>> send transaction request_________***________________________#
