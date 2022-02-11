@@ -1,4 +1,6 @@
+from inspect import signature
 from tabnanny import check
+from click import prompt
 from django.shortcuts import render
 from django.http import JsonResponse, HttpResponse, request, response
 from django.views.decorators.csrf import csrf_exempt
@@ -10,6 +12,10 @@ from urllib.parse import urlparse
 from uuid import uuid4
 import requests
 from collections import Counter
+import ast
+import pwinput
+from hashlib import sha512
+
 
 
 
@@ -41,13 +47,13 @@ class Blockchain:
         return self.chain[-1]
         
 
-    def new_transaction(self, sender, reciever, amount):
+    def new_transaction(self, sender, reciever, amount, signature):
         self.current_transactions.append({
             "sender" : sender,
             "receiver" : reciever,
-            "amount" : amount
+            "amount" : int(amount)-1,
             # hash : "",
-            # signature : "",
+            "signature" : signature,
         })
         next_block = self.last_block()
         return  next_block["index"] + 1
@@ -97,8 +103,6 @@ class Blockchain:
         
 
     def resolve_conflicts(self):
-
-        
         neighbours = self.nodes
         new_chain = None
         tests = [] ; l = []
@@ -149,6 +153,17 @@ class Blockchain:
         return False
 
         
+    def check_signature(self,signature, key, msg):
+        k = key.split(",")
+        # print(k)
+        # print(msg)
+        e = int(k[1])
+        n = int(k[0])
+        hash = int.from_bytes(sha512(msg).digest(), byteorder='big')
+        hashFromSignature = pow(signature, e, n)
+
+        return hash == hashFromSignature
+        # return False
 
     def valid_chain(self, chain):
         last_block = chain[0]
@@ -175,21 +190,42 @@ class Blockchain:
 
 ####_____object_____####
 blockchain = Blockchain()
-####_____This_Node_Address_____####
-node_address = str(uuid4()).replace('-','')
+
+
+def login():
+    global node_address
+
+    print("Login with your Minier Account")
+    email = input("e-mail : ")
+    username = input("Username : ")
+    password = pwinput.pwinput()
+    
+    login_data = {
+        'email' : email,
+        'username' : username,
+        'password' : password
+    }
+    minier_login = requests.post("http://127.0.0.1:8000/login", data=login_data)
+    # print(minier_login.content)
+    mydata = ast.literal_eval(minier_login.content.decode("UTF-8"))
+    node_address = mydata['public_key']
+    node_address = str(node_address)
+    print(node_address)
+
+
 
 
 def full_chain(request):
     if request.method == 'GET':
         ret = []
         
-        try:    
-            for i in blockchain.chain:
-                bc = i['transactions']
-                for j in bc:
-                    if j['sender'] == '0':
-                        ret.append(j['receiver'])
-        except: print(blockchain.chain)
+        # try:    
+        for i in blockchain.chain:
+            bc = i['transactions']
+            for j in bc:
+                if j['sender'] == '0':
+                    ret.append(j['receiver'])
+        # except: print(blockchain.chain)
         response = {
                     'receiver' : ret,
                     'length' : len(blockchain.chain), 
@@ -202,36 +238,79 @@ def full_chain(request):
 def new_transcations(request):
     if request.method == "POST":
         values = json.loads(request.body)
+        # values = request.body
         print("Time_Recieved >>>>",time.time())
-        required = ['sender','receiver','amount']
+        required = ['sender','receiver','amount', 'signature']
         if not all (k in values for k in required):
             response = {'message' : 'Some Values are Missing'}
-        
-#_____________________________________***_________check siganture _________***________________________________________#
+            return JsonResponse(response)
+        tx_data = {
+            "sender":values["sender"],
+            "receiver": values["receiver"],
+            "amount": values["amount"]
+        }
 
+        #_____________________________________***_________check siganture _________***________________________________________#
+        if blockchain.check_signature(values['signature'], values['sender'], json.dumps(tx_data).encode('utf-8')) == False:
+            print("COULD NOT VERFY YOUR TRANSACTION")
+            response = {'message' : 'COULD NOT VERFY YOUR TRANSACTION'}
+            return JsonResponse(response)
+
+
+        #_____________________________________***_________check balance _________***________________________________________#
+        
+        data = {
+                "balance" : values["amount"],
+                "sender" : values["sender"]
+            }
+        a = requests.post("http://127.0.0.1:8000/checkbalance", data=data)
+        a = a.content
+        a = json.loads(a.decode('utf-8'))
+        if a["message"] == "False":
+            response = {'message' : "INSEFICIENT BALANCE"}
+            return JsonResponse(response)
+        
         else:    
-            index = blockchain.new_transaction(values['sender'], values['receiver'], values['amount'])
+            print(values['signature'])
+            sender = values['sender']
+            index = blockchain.new_transaction(values['sender'], values['receiver'], values['amount'],values['signature'])
             tx_no = len(blockchain.current_transactions)
             print(blockchain.current_transactions)
+            
+            mine(sender)
+            
             response = {'message' : f'Your Trasaction will be added to Block {index} as {tx_no} transaction'}
 
-        mine()
     else: response = {'message' : 'Method Not Allowed'}
+    
     return JsonResponse(response)
 
 
-def mine():
+
+def mine(sender):
 
     if len(blockchain.current_transactions) == 0:
         response = {    'message' : "No Transactions to Mine",   }
     else:
         last_block = blockchain.last_block()
         proof = blockchain.proof_of_work(last_block)
+        m_tx_data = {
+            "sender":sender,
+            "receiver": node_address,
+            "amount": 2
+        }
+        k = node_address.split(",")
+        d = int(k[2])
+        n = int(k[0])
+        msg = json.dumps(m_tx_data).encode('utf-8')           
+        hash = int.from_bytes(sha512(msg).digest(), byteorder='big')
+        signature = pow(hash, d, n)
 
         blockchain.new_transaction(
-            sender = "-----BEGIN PUBLIC KEY-----MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDAoQKW8USQXAJptg1gnO8QuMAqvMBOcUJYlQAHKGtfE8S9iKKwlNFS0qhWG8/NHdeV9qxxlzn9r2IPPGeYGNo2CpLwkn/Jz+c+akfRH1wHn06qfXWgxPfRzNPQuGaZm3JtmqtxffboLPVebiKSz3/U7KQ77VFYydvTrD259mOtcwIDAQAB-----END PUBLIC KEY-----",
+            sender = sender,
             reciever = node_address,
-            amount = 1,
+            amount = 2,
+            signature = signature
         )
 
         # previous_hash = blockchain.hash(last_block)
@@ -251,10 +330,10 @@ def mine():
         for node in neighbours:
             consensus = requests.get(f'http://{node}/nodes/resolve')
 
-
-
 #_____________________________________***_________check for minier_________***________________________________________#
+
         time.sleep(3)
+
         check = blockchain.chain[-1]
         c_tx = check['transactions']
         tx_data = {}
@@ -264,9 +343,11 @@ def mine():
                 for i in c_tx:
                     j+=1
                     tx_data[f'{j}'] = f"{i['sender']}|{i['receiver']}|{i['amount']}"
-                send_tx = requests.post("http://127.0.0.1:8000/transaction", data=tx_data)
+                send_tx = requests.post("http://127.0.0.1:8000/transaction/conformation", data=tx_data)
+                
             else: pass
             print(tx_data)
+
 #_____________________***_________if minier is self: >>>> send transaction request_________***________________________#
         
 

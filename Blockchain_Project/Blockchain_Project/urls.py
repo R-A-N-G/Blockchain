@@ -16,7 +16,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from Blockchain_App import views
-from Blockchain_App.views import test , full_chain, new_transcations, mine, register_node, P_2_P, consensus
+from Blockchain_App.views import test , full_chain, new_transcations, mine, register_node, P_2_P, consensus, login
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -28,3 +28,4 @@ urlpatterns = [
     path('nodes/resolve', views.consensus, name="consensus"),
     path('p2p/', views.P_2_P, name="UTXO_test"),
 ]
+login()
