@@ -1,3 +1,4 @@
+from email import message
 from inspect import signature
 from tabnanny import check
 from click import prompt
@@ -10,6 +11,7 @@ import time
 from time import ctime
 from urllib.parse import urlparse
 from uuid import uuid4
+from flask import Response
 import requests
 from collections import Counter
 import ast
@@ -83,7 +85,7 @@ class Blockchain:
 
     def register_node(self, address):
         parsed_url = urlparse(address)
-        print("****",parsed_url)
+        # print("****",parsed_url)
         # if parsed_url.netloc:
         #     self.nodes.add(parsed_url.netloc) ; print('1', parsed_url)
         # elif parsed_url.path:
@@ -92,12 +94,12 @@ class Blockchain:
         #     raise ValueError("Please Enter a valid Node Address") ; print('3')
         self.nodes.add(address)
         neighbours = self.nodes
-        print(">>>>>",neighbours)
+        # print(">>>>>",neighbours)
         
-        for node in neighbours:
-            response = requests.get(f'http://{node}/p2p')
-            a = str(node) + "-->>" + str(response.json()['message'])
-            self.node_id_list.add(a)
+        # for node in neighbours:
+        #     response = requests.get(f'http://{node}/p2p')
+        #     a = str(node) + "-->>" + str(response.json()['message'])
+        #     self.node_id_list.add(a)
         
 
         
@@ -205,14 +207,29 @@ def login():
         'username' : username,
         'password' : password
     }
+
     minier_login = requests.post("http://127.0.0.1:8000/login", data=login_data)
-    # print(minier_login.content)
+
     mydata = ast.literal_eval(minier_login.content.decode("UTF-8"))
     node_address = mydata['public_key']
     node_address = str(node_address)
-    print(node_address)
+    
+    # print(blockchain.nodes)
+
+    print("WELCOME MINIER :> ",node_address)
 
 
+
+def join_network(request):
+    if request.method == 'GET':
+
+        network = requests.post("http://127.0.0.1:8000/p2p", data=node_address)
+        # print(network.content)
+        response = {
+            "message" : "working"
+        }
+        print(request.build_absolute_uri, request.QUERY_STRING)
+    return JsonResponse(response)
 
 
 def full_chain(request):
@@ -263,6 +280,7 @@ def new_transcations(request):
                 "balance" : values["amount"],
                 "sender" : values["sender"]
             }
+        # a = requests.post("http://127.0.0.1:8000/checkbalance", data=data)
         a = requests.post("http://127.0.0.1:8000/checkbalance", data=data)
         a = a.content
         a = json.loads(a.decode('utf-8'))
@@ -344,6 +362,7 @@ def mine(sender):
                     j+=1
                     tx_data[f'{j}'] = f"{i['sender']}|{i['receiver']}|{i['amount']}"
                 send_tx = requests.post("http://127.0.0.1:8000/transaction/conformation", data=tx_data)
+                # send_tx = requests.post("http://192.168.43.78:8000/transaction/conformation", data=tx_data)
                 
             else: pass
             print(tx_data)
@@ -366,8 +385,9 @@ def register_node(request):
             blockchain.register_node(node)
         response = {
             'message' : 'new nodes added',
-            'total nodes' : list(blockchain.node_id_list),
+            'total nodes' : list(blockchain.nodes),
         }
+
         
     else: response = {'message' : 'Method Not Allowed'}
     return JsonResponse(response)
