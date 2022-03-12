@@ -1,4 +1,6 @@
 from email import message
+from Crypto.PublicKey import RSA
+from Crypto.Cipher import PKCS1_OAEP
 from inspect import signature
 from tabnanny import check
 from click import prompt
@@ -7,6 +9,7 @@ from django.http import JsonResponse, HttpResponse, request, response
 from django.views.decorators.csrf import csrf_exempt
 import hashlib
 import json
+import binascii
 import time
 from time import ctime
 from urllib.parse import urlparse
@@ -18,7 +21,9 @@ import ast
 import pwinput
 from hashlib import sha512
 
-
+Key = b"-----BEGIN RSA PRIVATE KEY-----\nMIICXQIBAAKBgQDSXduJaq2xNGWwGIimwZDHvAkvls2SG4uuB6pTp+70PJc80Hwa\nththYprtYaw4dF1UKHnSVvuo1q+XbEXW727NTMZKH7PPN5Ajz4V6aOcTMjBwDD8H\nOUTHbdyiasQXlNYIqPxhBkmZWPqDhPq7n5voxTBe0xDXtWblU3RnpwUOqQIDAQAB\nAoGAFaIQRv/g78WvJV5IgzmJnXihSzMLXdiWUyW3ptWwtY4bkWXxNT//7dJZk0rF\njqKszFBDQtWuGI1HTl+UiQdjUeqSoYwvR6c3WvaJtaO7Y3DpWRc04yipKbtTDzAY\n2tMoAO9F0rn6MRTTXiLV0DJInZo5ksCnKO+hNlrPHp/bVU8CQQDXDvyIAhRpU7bz\nuCl36/NPXSIiKmi8OQzbR1AlSULVpOAT6P0SpVOaIMAcedGrX8JnBiN0FL7WMRum\nCu9u/uerAkEA+mo1O29p/h2mivt675zIPkNqww1BTzRlVa6oKyeSI8OMn9WvDkDY\nLVT894AFIO50svDbPcoHjwl/dDBERnW++wJBAIEvd3McDLbYmuX8kqx/CEF8aKyt\nXQz0GE0AoZxETemYiSJsqtkwhu/nDIAOjWyssVLB1To93AU+qqUrnHjIltECQQDj\nb4EnmTp4TW/MvTlb1VbdjheyTiCqElmTJ42fnFIT33CiXs6esHBnQ9B57jE6RrmB\nKFbH2O1ikWrMGWZ5ZEnvAkBNZwqX10HQp3QJ2LamMz2JmI+ujCikPOyddAyXIaIr\n0a9CaGO+UyePqcge2VG53rsheoA+kIiPabCukVxp1PHL\n-----END RSA PRIVATE KEY-----"
+pubKey = RSA.import_key(Key).public_key()
+privateKey = RSA.import_key(Key)
 
 
 class Blockchain:
@@ -29,13 +34,14 @@ class Blockchain:
         self.node_id_list = set()
 
         #__The genesis block__#
-        self.new_block(previous_hash='1', proof=100)
+        self.new_block(previous_hash='1', proof=100, enc_tx_data="XXX")
 
-    def new_block(self, proof, previous_hash):
+    def new_block(self, proof, previous_hash, enc_tx_data):
         block = {
             "index" : len(self.chain) + 1,
             "timestamp" : time.time(),
-            "transactions" : self.current_transactions,
+            "transaction" : self.current_transactions,
+            "transactions" : enc_tx_data,
             "proof": proof,
             "previous_hash" : previous_hash,
         }
@@ -209,6 +215,7 @@ def login():
     }
 
     minier_login = requests.post("http://127.0.0.1:8000/login", data=login_data)
+    # minier_login = requests.post("http://192.168.0.102:8000/login", data=login_data)
 
     mydata = ast.literal_eval(minier_login.content.decode("UTF-8"))
     node_address = mydata['public_key']
@@ -222,29 +229,20 @@ def login():
 
 def join_network(request):
     if request.method == 'GET':
-
         network = requests.post("http://127.0.0.1:8000/p2p", data=node_address)
-        # print(network.content)
+        # network = requests.post("http://192.168.0.102:8000/p2p", data=node_address)
+        print(network.content)
         response = {
             "message" : "working"
         }
-        print(request.build_absolute_uri, request.QUERY_STRING)
+        # print(request.build_absolute_uri, request.QUERY_STRING)
     return JsonResponse(response)
 
 
 def full_chain(request):
     if request.method == 'GET':
-        ret = []
-        
-        # try:    
-        for i in blockchain.chain:
-            bc = i['transactions']
-            for j in bc:
-                if j['sender'] == '0':
-                    ret.append(j['receiver'])
-        # except: print(blockchain.chain)
+
         response = {
-                    'receiver' : ret,
                     'length' : len(blockchain.chain), 
                     'chain': blockchain.chain,    
                     }
@@ -254,9 +252,25 @@ def full_chain(request):
 @csrf_exempt
 def new_transcations(request):
     if request.method == "POST":
-        values = json.loads(request.body)
-        # values = request.body
+        # values = json.loads(request.body)
+        value = request.body
+        # print(type(value))
+        
+        #_____________________________________***___________decrypting ____________***________________________________________#
+        enc_tx_data = json.loads(value.decode())["enc_tx_data"].split("|")
+        dec_tx_data = ""
+        decryptor = PKCS1_OAEP.new(privateKey)
+      
+        for i in enc_tx_data:
+            if not i:continue
+            dec_tx_data += decryptor.decrypt(binascii.unhexlify(i.encode())).decode()
+        values = json.loads(dec_tx_data)
+        print(values)
+
+        
         print("Time_Recieved >>>>",time.time())
+
+
         required = ['sender','receiver','amount', 'signature']
         if not all (k in values for k in required):
             response = {'message' : 'Some Values are Missing'}
@@ -280,12 +294,13 @@ def new_transcations(request):
                 "balance" : values["amount"],
                 "sender" : values["sender"]
             }
-        # a = requests.post("http://127.0.0.1:8000/checkbalance", data=data)
         a = requests.post("http://127.0.0.1:8000/checkbalance", data=data)
+        # a = requests.post("http://192.168.0.102:8000/checkbalance", data=data)
         a = a.content
         a = json.loads(a.decode('utf-8'))
         if a["message"] == "False":
             response = {'message' : "INSEFICIENT BALANCE"}
+            print("INSEFICIENT BALANCE")
             return JsonResponse(response)
         
         else:    
@@ -295,17 +310,17 @@ def new_transcations(request):
             tx_no = len(blockchain.current_transactions)
             print(blockchain.current_transactions)
             
-            mine(sender)
+            mine(sender, enc_tx_data)
             
             response = {'message' : f'Your Trasaction will be added to Block {index} as {tx_no} transaction'}
 
     else: response = {'message' : 'Method Not Allowed'}
-    
+    # response = {'message' : 'Method Not Allowed'}
     return JsonResponse(response)
 
 
 
-def mine(sender):
+def mine(sender, value):
 
     if len(blockchain.current_transactions) == 0:
         response = {    'message' : "No Transactions to Mine",   }
@@ -333,7 +348,7 @@ def mine(sender):
 
         # previous_hash = blockchain.hash(last_block)
         previous_hash = last_block['hash']
-        block = blockchain.new_block(proof, previous_hash)
+        block = blockchain.new_block(proof, previous_hash, "".join(value))
         # print(block)
 
         response = {
@@ -353,7 +368,7 @@ def mine(sender):
         time.sleep(3)
 
         check = blockchain.chain[-1]
-        c_tx = check['transactions']
+        c_tx = check['transaction']
         tx_data = {}
         for i in c_tx:
             if i['receiver'] == node_address:
@@ -362,7 +377,7 @@ def mine(sender):
                     j+=1
                     tx_data[f'{j}'] = f"{i['sender']}|{i['receiver']}|{i['amount']}"
                 send_tx = requests.post("http://127.0.0.1:8000/transaction/conformation", data=tx_data)
-                # send_tx = requests.post("http://192.168.43.78:8000/transaction/conformation", data=tx_data)
+                # send_tx = requests.post("http://192.168.0.102:8000/transaction/conformation", data=tx_data)
                 
             else: pass
             print(tx_data)
