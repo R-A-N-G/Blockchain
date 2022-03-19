@@ -24,7 +24,7 @@ from hashlib import sha512
 Key = b"-----BEGIN RSA PRIVATE KEY-----\nMIICXQIBAAKBgQDSXduJaq2xNGWwGIimwZDHvAkvls2SG4uuB6pTp+70PJc80Hwa\nththYprtYaw4dF1UKHnSVvuo1q+XbEXW727NTMZKH7PPN5Ajz4V6aOcTMjBwDD8H\nOUTHbdyiasQXlNYIqPxhBkmZWPqDhPq7n5voxTBe0xDXtWblU3RnpwUOqQIDAQAB\nAoGAFaIQRv/g78WvJV5IgzmJnXihSzMLXdiWUyW3ptWwtY4bkWXxNT//7dJZk0rF\njqKszFBDQtWuGI1HTl+UiQdjUeqSoYwvR6c3WvaJtaO7Y3DpWRc04yipKbtTDzAY\n2tMoAO9F0rn6MRTTXiLV0DJInZo5ksCnKO+hNlrPHp/bVU8CQQDXDvyIAhRpU7bz\nuCl36/NPXSIiKmi8OQzbR1AlSULVpOAT6P0SpVOaIMAcedGrX8JnBiN0FL7WMRum\nCu9u/uerAkEA+mo1O29p/h2mivt675zIPkNqww1BTzRlVa6oKyeSI8OMn9WvDkDY\nLVT894AFIO50svDbPcoHjwl/dDBERnW++wJBAIEvd3McDLbYmuX8kqx/CEF8aKyt\nXQz0GE0AoZxETemYiSJsqtkwhu/nDIAOjWyssVLB1To93AU+qqUrnHjIltECQQDj\nb4EnmTp4TW/MvTlb1VbdjheyTiCqElmTJ42fnFIT33CiXs6esHBnQ9B57jE6RrmB\nKFbH2O1ikWrMGWZ5ZEnvAkBNZwqX10HQp3QJ2LamMz2JmI+ujCikPOyddAyXIaIr\n0a9CaGO+UyePqcge2VG53rsheoA+kIiPabCukVxp1PHL\n-----END RSA PRIVATE KEY-----"
 pubKey = RSA.import_key(Key).public_key()
 privateKey = RSA.import_key(Key)
-wallet_address = "127.0.0.1"
+wallet_address = "127.0.0.1:8000"
 
 class Blockchain:
     def __init__(self):
@@ -207,31 +207,35 @@ def login():
     email = input("e-mail : ")
     username = input("Username : ")
     password = pwinput.pwinput()
+    domain = input("Enter Ypur IP Address")
     
     login_data = {
         'email' : email,
         'username' : username,
-        'password' : password
+        'password' : password,
+        'domain' : domain
     }
 
     minier_login = requests.post(f"http://{wallet_address}/login", data=login_data)
-
 
     mydata = ast.literal_eval(minier_login.content.decode("UTF-8"))
     node_address = mydata['public_key']
     node_address = str(node_address)
     
     # print(blockchain.nodes)
-
+    domain = input("Enter Ypur IP Address")
+    network = requests.post(f"http://{wallet_address}/p2p", data=domain)
     print("WELCOME MINIER :> ",node_address)
 
 
 
 def join_network(request):
     if request.method == 'GET':
-        network = requests.post(f"http://{wallet_address}/p2p", data=node_address)
 
-        print(network.content)
+        
+        domain = input("Enter Ypur IP Address")
+        network = requests.post(f"http://{wallet_address}/p2p", data=domain)
+
         response = {
             "message" : "working"
         }
