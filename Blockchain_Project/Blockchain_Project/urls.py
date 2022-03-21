@@ -27,7 +27,7 @@ urlpatterns = [
     path('mine/', views.mine, name="mine"),
     path('nodes/resolve', views.consensus, name="consensus"),
     path('p2p/', views.P_2_P, name="UTXO_test"),
-    path('joinnetwork', views.join_network, name="join_network"),
+    # path('joinnetwork', views.join_network, name="join_network"),
 ]
 login()
 # create_p_2_p()

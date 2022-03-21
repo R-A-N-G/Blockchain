@@ -14,7 +14,7 @@ import time
 from time import ctime
 from urllib.parse import urlparse
 from uuid import uuid4
-from flask import Response
+# from flask import Response
 import requests
 from collections import Counter
 import ast
@@ -223,24 +223,27 @@ def login():
     node_address = str(node_address)
     
     # print(blockchain.nodes)
-    domain = input("Enter Ypur IP Address")
-    network = requests.post(f"http://{wallet_address}/p2p", data=domain)
+    # domain = input("Enter Ypur IP Address")
+    # network = requests.post(f"http://{wallet_address}/p2p", data=domain)
     print("WELCOME MINIER :> ",node_address)
 
 
 
-def join_network(request):
-    if request.method == 'GET':
+# def join_network(request):
+#     if request.method == 'GET':
 
         
-        domain = input("Enter Ypur IP Address")
-        network = requests.post(f"http://{wallet_address}/p2p", data=domain)
+#         domain = input("Enter Ypur IP Address")
+        
+#         domain = {"ip":domain}
+        
+#         network = requests.post(f"http://{wallet_address}/p2p", data=domain)
 
-        response = {
-            "message" : "working"
-        }
-        # print(request.build_absolute_uri, request.QUERY_STRING)
-    return JsonResponse(response)
+#         response = {
+#             "message" : "working"
+#         }
+#         # print(request.build_absolute_uri, request.QUERY_STRING)
+#     return JsonResponse(response)
 
 
 def full_chain(request):
