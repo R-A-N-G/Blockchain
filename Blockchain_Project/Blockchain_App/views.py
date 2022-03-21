@@ -14,7 +14,11 @@ import time
 from time import ctime
 from urllib.parse import urlparse
 from uuid import uuid4
+<<<<<<< HEAD
 # from flask import Response
+=======
+#from flask import Response
+>>>>>>> 6fd630152841fee7eca91a37761cc761bab4d980
 import requests
 from collections import Counter
 import ast
@@ -24,7 +28,8 @@ from hashlib import sha512
 Key = b"-----BEGIN RSA PRIVATE KEY-----\nMIICXQIBAAKBgQDSXduJaq2xNGWwGIimwZDHvAkvls2SG4uuB6pTp+70PJc80Hwa\nththYprtYaw4dF1UKHnSVvuo1q+XbEXW727NTMZKH7PPN5Ajz4V6aOcTMjBwDD8H\nOUTHbdyiasQXlNYIqPxhBkmZWPqDhPq7n5voxTBe0xDXtWblU3RnpwUOqQIDAQAB\nAoGAFaIQRv/g78WvJV5IgzmJnXihSzMLXdiWUyW3ptWwtY4bkWXxNT//7dJZk0rF\njqKszFBDQtWuGI1HTl+UiQdjUeqSoYwvR6c3WvaJtaO7Y3DpWRc04yipKbtTDzAY\n2tMoAO9F0rn6MRTTXiLV0DJInZo5ksCnKO+hNlrPHp/bVU8CQQDXDvyIAhRpU7bz\nuCl36/NPXSIiKmi8OQzbR1AlSULVpOAT6P0SpVOaIMAcedGrX8JnBiN0FL7WMRum\nCu9u/uerAkEA+mo1O29p/h2mivt675zIPkNqww1BTzRlVa6oKyeSI8OMn9WvDkDY\nLVT894AFIO50svDbPcoHjwl/dDBERnW++wJBAIEvd3McDLbYmuX8kqx/CEF8aKyt\nXQz0GE0AoZxETemYiSJsqtkwhu/nDIAOjWyssVLB1To93AU+qqUrnHjIltECQQDj\nb4EnmTp4TW/MvTlb1VbdjheyTiCqElmTJ42fnFIT33CiXs6esHBnQ9B57jE6RrmB\nKFbH2O1ikWrMGWZ5ZEnvAkBNZwqX10HQp3QJ2LamMz2JmI+ujCikPOyddAyXIaIr\n0a9CaGO+UyePqcge2VG53rsheoA+kIiPabCukVxp1PHL\n-----END RSA PRIVATE KEY-----"
 pubKey = RSA.import_key(Key).public_key()
 privateKey = RSA.import_key(Key)
-wallet_address = "127.0.0.1:8000"
+# wallet_address = "127.0.0.1:8000"
+wallet_address = "192.168.43.78:8000"
 
 class Blockchain:
     def __init__(self):
@@ -226,6 +231,9 @@ def login():
     # domain = input("Enter Ypur IP Address")
     # network = requests.post(f"http://{wallet_address}/p2p", data=domain)
     print("WELCOME MINIER :> ",node_address)
+    list_of_url = mydata["node_list"]
+
+    register_node(list_of_url)
 
 
 
@@ -234,11 +242,19 @@ def login():
 
         
 #         domain = input("Enter Ypur IP Address")
+<<<<<<< HEAD
         
 #         domain = {"ip":domain}
         
 #         network = requests.post(f"http://{wallet_address}/p2p", data=domain)
 
+=======
+
+#         domain = (domain)
+
+#         network = requests.post(f"http://{wallet_address}/p2p", json=domain)
+
+>>>>>>> 6fd630152841fee7eca91a37761cc761bab4d980
 #         response = {
 #             "message" : "working"
 #         }
@@ -396,22 +412,25 @@ def mine(sender, value):
     return JsonResponse(response)
 
 @csrf_exempt
-def register_node(request):
-    if request.method == "POST":
-        values = json.loads(request.body)
-        nodes = values.get('nodes')
-        print(nodes)
-        if nodes is None:
-            response = { 'message' : 'Error :- Invalid list of  nodes' }
-        for node in nodes:
-            blockchain.register_node(node)
-        response = {
-            'message' : 'new nodes added',
-            'total nodes' : list(blockchain.nodes),
-        }
+# def register_node(request):
+def register_node(list_of_url):
+    # if request.method == "POST":
+    # values = json.loads(request.body)
+    # nodes = values.get('nodes')
+    # print(nodes)
+    nodes = list_of_url
+    if nodes is None:
+        response = { 'message' : 'Error :- Invalid list of  nodes' }
+    for node in nodes:
+        blockchain.register_node(node)
+    response = {
+        'message' : 'new nodes added',
+        'total nodes' : list(blockchain.nodes),
+    }
+    print(response)
 
         
-    else: response = {'message' : 'Method Not Allowed'}
+    # else: response = {'message' : 'Method Not Allowed'}
     return JsonResponse(response)
     
 

@@ -16,7 +16,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from Blockchain_App import views
-from Blockchain_App.views import test , full_chain, new_transcations, mine, register_node, P_2_P, consensus, login, join_network
+from Blockchain_App.views import test , full_chain, new_transcations, mine, register_node, P_2_P, consensus, login#, join_network
 
 urlpatterns = [
     path('admin/', admin.site.urls),
