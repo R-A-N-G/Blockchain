@@ -1,6 +1,6 @@
 from email import message
-# from Crypto.PublicKey import RSA
-# from Crypto.Cipher import PKCS1_OAEP
+from Crypto.PublicKey import RSA
+from Crypto.Cipher import PKCS1_OAEP
 from inspect import signature
 from tabnanny import check
 from click import prompt
@@ -21,10 +21,10 @@ import pwinput
 from hashlib import sha512
 
 Key = b"-----BEGIN RSA PRIVATE KEY-----\nMIICXQIBAAKBgQDSXduJaq2xNGWwGIimwZDHvAkvls2SG4uuB6pTp+70PJc80Hwa\nththYprtYaw4dF1UKHnSVvuo1q+XbEXW727NTMZKH7PPN5Ajz4V6aOcTMjBwDD8H\nOUTHbdyiasQXlNYIqPxhBkmZWPqDhPq7n5voxTBe0xDXtWblU3RnpwUOqQIDAQAB\nAoGAFaIQRv/g78WvJV5IgzmJnXihSzMLXdiWUyW3ptWwtY4bkWXxNT//7dJZk0rF\njqKszFBDQtWuGI1HTl+UiQdjUeqSoYwvR6c3WvaJtaO7Y3DpWRc04yipKbtTDzAY\n2tMoAO9F0rn6MRTTXiLV0DJInZo5ksCnKO+hNlrPHp/bVU8CQQDXDvyIAhRpU7bz\nuCl36/NPXSIiKmi8OQzbR1AlSULVpOAT6P0SpVOaIMAcedGrX8JnBiN0FL7WMRum\nCu9u/uerAkEA+mo1O29p/h2mivt675zIPkNqww1BTzRlVa6oKyeSI8OMn9WvDkDY\nLVT894AFIO50svDbPcoHjwl/dDBERnW++wJBAIEvd3McDLbYmuX8kqx/CEF8aKyt\nXQz0GE0AoZxETemYiSJsqtkwhu/nDIAOjWyssVLB1To93AU+qqUrnHjIltECQQDj\nb4EnmTp4TW/MvTlb1VbdjheyTiCqElmTJ42fnFIT33CiXs6esHBnQ9B57jE6RrmB\nKFbH2O1ikWrMGWZ5ZEnvAkBNZwqX10HQp3QJ2LamMz2JmI+ujCikPOyddAyXIaIr\n0a9CaGO+UyePqcge2VG53rsheoA+kIiPabCukVxp1PHL\n-----END RSA PRIVATE KEY-----"
-# pubKey = RSA.import_key(Key).public_key()
-# privateKey = RSA.import_key(Key)
-# wallet_address = "127.0.0.1:8000"
-wallet_address = "192.168.137.1:8000"
+pubKey = RSA.import_key(Key).public_key()
+privateKey = RSA.import_key(Key)
+wallet_address = "127.0.0.1:8000"
+# wallet_address = "192.168.137.1:8000"
 
 class Blockchain:
     def __init__(self):
@@ -266,14 +266,14 @@ def new_transcations(request):
         #_____________________________________***___________decrypting ____________***________________________________________#
         enc_tx_data = json.loads(value.decode())["enc_tx_data"].split("|")
         dec_tx_data = ""
-        # decryptor = PKCS1_OAEP.new(privateKey)
+        decryptor = PKCS1_OAEP.new(privateKey)
       
-        # for i in enc_tx_data:
-        #     if not i:continue
-        #     dec_tx_data += decryptor.decrypt(binascii.unhexlify(i.encode())).decode()
-        # values = json.loads(dec_tx_data)
+        for i in enc_tx_data:
+            if not i:continue
+            dec_tx_data += decryptor.decrypt(binascii.unhexlify(i.encode())).decode()
+        values = json.loads(dec_tx_data)
         # print(values)
-        values = {}
+        # values = {}
         
         print("Time_Recieved >>>>",time.time())
 
@@ -322,7 +322,7 @@ def new_transcations(request):
             response = {'message' : f'Your Trasaction will be added to Block {index} as {tx_no} transaction'}
 
     else: response = {'message' : 'Method Not Allowed'}
-    response = {'message' : 'Method Not Allowed'}
+    # response = {'message' : 'Method Not Allowed'}
     return JsonResponse(response)
 
 
