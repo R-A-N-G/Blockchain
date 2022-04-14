@@ -1,3 +1,4 @@
+from base64 import decode
 from email import message
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import PKCS1_OAEP
@@ -24,7 +25,7 @@ Key = b"-----BEGIN RSA PRIVATE KEY-----\nMIICXQIBAAKBgQDSXduJaq2xNGWwGIimwZDHvAk
 pubKey = RSA.import_key(Key).public_key()
 privateKey = RSA.import_key(Key)
 wallet_address = "127.0.0.1:8000"
-# wallet_address = "192.168.137.1:8000"
+# wallet_address = "192.168.43.21:8000"
 
 class Blockchain:
     def __init__(self):
@@ -207,7 +208,7 @@ def login():
     email = input("e-mail : ")
     username = input("Username : ")
     password = pwinput.pwinput()
-    domain = input("Enter Ypur IP Address")
+    domain = input("Enter Ypur IP Address : ")
     
     login_data = {
         'email' : email,
@@ -223,27 +224,33 @@ def login():
     node_address = str(node_address)
     
     list_of_url = mydata["node_list"]
+    for node in list_of_url:
+            blockchain.register_node(node)
+            print(blockchain.nodes)
     print("WELCOME MINIER :> ",node_address)
 
+    for node in list_of_url:
+            blockchain.register_node(node)
+            print("Joined network \n Total Nodes :",blockchain.nodes)
 
-    register_node(list_of_url)
+
+    
 
 
 
-# def join_network(request):
+
+
+# def full_chain(request):
 #     if request.method == 'GET':
 
-        
-#         domain = input("Enter Ypur IP Address")
-
-
-#         network = requests.post(f"http://{wallet_address}/p2p", json=domain)
-
 #         response = {
-#             "message" : "working"
+#                     'length' : len(blockchain.chain), 
+#                     'chain': blockchain.chain,    
+#                     }
+#         context = {
+#             "chain" : blockchain.chain
 #         }
-#         # print(request.build_absolute_uri, request.QUERY_STRING)
-#     return JsonResponse(response)
+#     return render(request, 'mainapp/chain.html', context)
 
 
 def full_chain(request):
@@ -384,7 +391,7 @@ def mine(sender, value):
                     j+=1
                     tx_data[f'{j}'] = f"{i['sender']}|{i['receiver']}|{i['amount']}"
                 send_tx = requests.post(f"http://{wallet_address}/transaction/conformation", data=tx_data)
-                # send_tx = requests.post("http://192.168.0.102:8000/transaction/conformation", data=tx_data)
+                
                 
             else: pass
             print(tx_data)
@@ -396,25 +403,27 @@ def mine(sender, value):
     return JsonResponse(response)
 
 @csrf_exempt
-# def register_node(request):
-def register_node(list_of_url):
-    # if request.method == "POST":
-    # values = json.loads(request.body)
-    # nodes = values.get('nodes')
-    # print(nodes)
-    nodes = list_of_url
-    if nodes is None:
-        response = { 'message' : 'Error :- Invalid list of  nodes' }
-    for node in nodes:
-        blockchain.register_node(node)
-    response = {
-        'message' : 'new nodes added',
-        'total nodes' : list(blockchain.nodes),
-    }
-    print(response)
+def register_node(request):
+# def register_node(list_of_url):
+    if request.method == "POST":
+        print((request.body))
+    
+        values = json.loads((request.body).decode())
+        nodes = values.get('nodes')
+        print(nodes)
+        # nodes = list_of_url
+        if nodes is None:
+            response = { 'message' : 'Error :- Invalid list of  nodes' }
+        for node in nodes:
+            blockchain.register_node(node)
+        response = {
+            'message' : 'new nodes added',
+            'total nodes' : list(blockchain.nodes),
+        }
+        print(response)
 
         
-    # else: response = {'message' : 'Method Not Allowed'}
+    else: response = {'message' : 'Method Not Allowed'}
     return JsonResponse(response)
     
 
