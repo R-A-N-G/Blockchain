@@ -16,18 +16,19 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from Blockchain_App import views
-from Blockchain_App.views import test , full_chain, new_transcations, mine, register_node, P_2_P, consensus, login#, join_network
+from Blockchain_App.views import test , full_chain, new_transcations, mine, register_node, P_2_P, consensus, login, chain, dec_chain
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('test/', views.test, name="test"),
-    path('chain/', views.full_chain, name="full_chain"),
+    path('chain/', views.chain, name="chain"),
+    path('dec_chain/', views.dec_chain, name="dec_chain"),
+    path('fullchain/', views.full_chain, name="full_chain"),
     path('node/register', views.register_node, name="register_node"),
     path('transaction/new', views.new_transcations, name="new_transcations"),
     path('mine/', views.mine, name="mine"),
     path('nodes/resolve', views.consensus, name="consensus"),
-    path('p2p/', views.P_2_P, name="UTXO_test"),
-    # path('joinnetwork', views.join_network, name="join_network"),
+    path('p2p/', views.P_2_P, name="p2p"),
+    
 ]
 login()
-# create_p_2_p()

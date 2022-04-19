@@ -1,0 +1,145 @@
+<html>
+  
+  <body 
+  style = 
+    "background-color: black;
+    background-image: radial-gradient(rgba(0, 150, 0, 0.75), black 120%);
+    font: 1.1rem Inconsolata, monospace;
+    color: white"> 
+    {% block body %}
+
+      <h1 style = 
+      "text-align: center;  ">CHAIN</h1>
+
+
+      <input id="text_a" type="text" size="100px"/>
+      <p id="answer"></p>
+      <button onclick="myFunction()">Check</button>
+      
+      <div id = "main" style="display: none;">
+      {% for block in chain %}
+        <div 
+          style = 
+            "
+            
+             text-align: center;
+             padding: 14px;
+             text-decoration: none;
+             background-color: #222;
+             width: 90%;
+             margin-top: 50px;
+             margin-left: 50px;
+                ">
+          {% for key, value in block.items %}
+            {% if key == "transaction" %}
+            <div id = "transaction" style="display: block;">
+              <p 
+              style = 
+                "overflow: hidden;
+                text-overflow: ellipsis;
+                word-wrap: break-word;
+                width: 80%;
+                margin-left: 50px;
+                text-align: left;
+                
+                ">
+                  {{ key }} : 
+              </p>
+              {% for txs in value %}
+                <br>
+                {%for data, txdata in txs.items %}
+                    
+                    <p 
+                        style = 
+                          "overflow: hidden;
+                          text-overflow: ellipsis;
+                          word-wrap: break-word;
+                          width: 80%;
+                          margin-left: 100px;
+                          text-align: left;
+              
+                          ">
+                            {{ data }} : {{ txdata }}
+                    </p> 
+                  
+                  {% endfor %}
+                  <br>
+              {% endfor %}
+            </div>
+            {% elif key == "transactions" %}
+              <p 
+              style = 
+                "overflow: hidden;
+                text-overflow: ellipsis;
+                word-wrap: break-word;
+                width: 90%;
+                margin-left: 50px;
+                text-align: left;
+                display: none;
+                ">
+                  {{ key }} :
+                </p>
+                <p 
+                  style = 
+                    "overflow: hidden;
+                    text-overflow: ellipsis;
+                    word-wrap: break-word;
+                    width: 80%;
+                    margin-left: 100px;
+                    text-align: left;                    
+                    display: -webkit-box;
+                    -webkit-line-clamp: 10;
+                    display: -webkit-box;
+                    -webkit-box-orient: vertical;   
+                    display: none;
+                    ">
+                      {{ value }} 
+                    </p>
+                    
+            {% else %}
+            <p 
+              style = 
+                "overflow: hidden;
+                text-overflow: ellipsis;
+                word-wrap: break-word;
+                width: 100%;
+                margin-left: 50px;
+                text-align: left;
+                
+                ">
+                  {{ key }} : {{ value }}
+            </p>
+
+            
+            {% endif %}
+            
+            
+          {% endfor %}
+        
+        </div>
+      
+      {% endfor %}
+      </div>
+
+
+      <script>function myFunction()
+        {
+        var a=document.getElementById("text_a").value;
+        var x = document.getElementById("main");
+        
+        if (a=="-----BEGIN RSA PRIVATE KEY-----MIICXQIBAAKBgQDSXduJaq2xNGWwGIimwZDHvAkvls2SG4uuB6pTp+70PJc80HwaththYprtYaw4dF1UKHnSVvuo1q+XbEXW727NTMZKH7PPN5Ajz4V6aOcTMjBwDD8HOUTHbdyiasQXlNYIqPxhBkmZWPqDhPq7n5voxTBe0xDXtWblU3RnpwUOqQIDAQABAoGAFaIQRv/g78WvJV5IgzmJnXihSzMLXdiWUyW3ptWwtY4bkWXxNT//7dJZk0rFjqKszFBDQtWuGI1HTl+UiQdjUeqSoYwvR6c3WvaJtaO7Y3DpWRc04yipKbtTDzAY2tMoAO9F0rn6MRTTXiLV0DJInZo5ksCnKO+hNlrPHp/bVU8CQQDXDvyIAhRpU7bzuCl36/NPXSIiKmi8OQzbR1AlSULVpOAT6P0SpVOaIMAcedGrX8JnBiN0FL7WMRumCu9u/uerAkEA+mo1O29p/h2mivt675zIPkNqww1BTzRlVa6oKyeSI8OMn9WvDkDYLVT894AFIO50svDbPcoHjwl/dDBERnW++wJBAIEvd3McDLbYmuX8kqx/CEF8aKytXQz0GE0AoZxETemYiSJsqtkwhu/nDIAOjWyssVLB1To93AU+qqUrnHjIltECQQDjb4EnmTp4TW/MvTlb1VbdjheyTiCqElmTJ42fnFIT33CiXs6esHBnQ9B57jE6RrmBKFbH2O1ikWrMGWZ5ZEnvAkBNZwqX10HQp3QJ2LamMz2JmI+ujCikPOyddAyXIaIr0a9CaGO+UyePqcge2VG53rsheoA+kIiPabCukVxp1PHL-----END RSA PRIVATE KEY-----")
+          {
+            x.style.display = "block"
+        
+          }
+        else
+          {
+            x.style.display = "none"
+        document.getElementById("answer").innerHTML="Incorrect Private key";
+          }
+          
+        }</script>
+
+    {% endblock %}
+  </body>
+</html>

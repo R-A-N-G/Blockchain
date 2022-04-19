@@ -1,0 +1,122 @@
+<html>
+  
+  <body 
+  style = 
+    "background-color: black;
+    background-image: radial-gradient(rgba(0, 150, 0, 0.75), black 120%);
+    font: 1.1rem Inconsolata, monospace;
+    color: white"> 
+    {% block body %}
+
+      <h1 style = 
+      "text-align: center;  ">CHAIN</h1>
+
+      <button style="margin-left: 45%;" ><a href="/dec_chain">Decrypt Transaction Data</a></button>
+      <div>
+      {% for block in chain %}
+        <div 
+          style = 
+            "
+            
+             text-align: center;
+             padding: 14px;
+             text-decoration: none;
+             background-color: #222;
+             width: 90%;
+             margin-top: 50px;
+             margin-left: 50px;
+                ">
+          {% for key, value in block.items %}
+            {% if key == "transaction" %}
+            <div id = "transaction" style="display: none;">
+              <p 
+              style = 
+                "overflow: hidden;
+                text-overflow: ellipsis;
+                word-wrap: break-word;
+                width: 80%;
+                margin-left: 50px;
+                text-align: left;
+                
+                ">
+                  {{ key }} : 
+              </p>
+              {% for txs in value %}
+                <br>
+                {%for data, txdata in txs.items %}
+                    
+                    <p 
+                        style = 
+                          "overflow: hidden;
+                          text-overflow: ellipsis;
+                          word-wrap: break-word;
+                          width: 90%;
+                          margin-left: 100px;
+                          text-align: left;
+              
+                          ">
+                            {{ data }} : {{ txdata }}
+                    </p> 
+                  
+                  {% endfor %}
+                  <br>
+              {% endfor %}
+            </div>
+            {% elif key == "transactions" %}
+              <p 
+              style = 
+                "overflow: hidden;
+                text-overflow: ellipsis;
+                word-wrap: break-word;
+                width: 80%;
+                margin-left: 50px;
+                text-align: left;
+                
+                ">
+                  {{ key }} :
+                </p>
+                <p 
+                  style = 
+                    "overflow: hidden;
+                    text-overflow: ellipsis;
+                    word-wrap: break-word;
+                    width: 80%;
+                    margin-left: 100px;
+                    text-align: left;                    
+                    display: -webkit-box;
+                    -webkit-line-clamp: 10;
+                    display: -webkit-box;
+                    -webkit-box-orient: vertical;   
+                    ">
+                      {{ value }} 
+                    </p>
+                    
+            {% else %}
+            <p 
+              style = 
+                "overflow: hidden;
+                text-overflow: ellipsis;
+                word-wrap: break-word;
+                width: 100%;
+                margin-left: 50px;
+                text-align: left;
+                
+                ">
+                  {{ key }} : {{ value }}
+            </p>
+
+            
+            {% endif %}
+            
+            
+          {% endfor %}
+        
+        </div>
+      
+      {% endfor %}
+      </div>
+
+
+    {% endblock %}
+  </body>
+</html>

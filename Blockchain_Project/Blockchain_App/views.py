@@ -1,22 +1,15 @@
-from base64 import decode
-from email import message
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import PKCS1_OAEP
-from inspect import signature
-from tabnanny import check
-from click import prompt
 from django.shortcuts import render
-from django.http import JsonResponse, HttpResponse, request, response
+from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 import hashlib
 import json
 import binascii
 import time
-from time import ctime
+from tqdm import tqdm
 from urllib.parse import urlparse
-from uuid import uuid4
 import requests
-from collections import Counter
 import ast
 import pwinput
 from hashlib import sha512
@@ -76,7 +69,7 @@ class Blockchain:
     def proof_of_work(self, last_block):
         last_proof = last_block["proof"]
 
-        print(last_proof)
+        # print(last_proof)
         last_hash = self.hash(last_block)
 
         proof = 0
@@ -92,21 +85,10 @@ class Blockchain:
 
     def register_node(self, address):
         parsed_url = urlparse(address)
-        # print("****",parsed_url)
-        # if parsed_url.netloc:
-        #     self.nodes.add(parsed_url.netloc) ; print('1', parsed_url)
-        # elif parsed_url.path:
-        #     self.nodes.add(parsed_url.scheme) ; print('2', parsed_url.path)
-        # else:
-        #     raise ValueError("Please Enter a valid Node Address") ; print('3')
+       
         self.nodes.add(address)
         neighbours = self.nodes
-        # print(">>>>>",neighbours)
-        
-        # for node in neighbours:
-        #     response = requests.get(f'http://{node}/p2p')
-        #     a = str(node) + "-->>" + str(response.json()['message'])
-        #     self.node_id_list.add(a)
+  
         
 
         
@@ -119,10 +101,10 @@ class Blockchain:
         max_length = len(self.chain)
         
         for node in neighbours:
-            response = requests.get(f'http://{node}/chain')
+            response = requests.get(f'http://{node}/fullchain')
 
             if response.status_code == 200:
-                # length = response.json()['length']
+               
                 length = response.json()['length']
                 chain = response.json()['chain']
                 t = (chain[-1])
@@ -135,7 +117,7 @@ class Blockchain:
 
                 tests.append(t['timestamp'])
                 
-                print(l)
+                # print(l)
         
                 if length > max_length and self.valid_chain(chain):
                     max_length = length
@@ -144,19 +126,17 @@ class Blockchain:
 
         i = tests.index(min(tests))
         n = list(neighbours)
-        new = requests.get(f'http://{n[i]}/chain')
+        new = requests.get(f'http://{n[i]}/fullchain')
 
-        print(self.valid_chain(new.json()['chain']))
-        print("First one ", tests, +min(tests))
-        # print(new.json()['chain'])
+    
 
         if self.valid_chain(new.json()['chain']) and len(new.json()['chain']) == max_length:
-            print(">>>>>>here>>>>>>>")
+            
             self.chain = new.json()['chain']
             new_chain = chain
         
         if new_chain:
-            # self.chain = new_chain
+            
             return True
 
         return False
@@ -164,8 +144,6 @@ class Blockchain:
         
     def check_signature(self,signature, key, msg):
         k = key.split(",")
-        # print(k)
-        # print(msg)
         e = int(k[1])
         n = int(k[0])
         hash = int.from_bytes(sha512(msg).digest(), byteorder='big')
@@ -226,32 +204,37 @@ def login():
     list_of_url = mydata["node_list"]
     for node in list_of_url:
             blockchain.register_node(node)
-            print(blockchain.nodes)
-    print("WELCOME MINIER :> ",node_address)
+    
+    print("\n")
+    for i in tqdm (range (100), desc="Loging in…", ascii=False, ncols=75):
+        time.sleep(0.01)
+
+    print("\nLoged In as => ",node_address,"\n")
+    
+    for i in tqdm (range (100), desc="Joining network", ascii=False, ncols=75):
+        time.sleep(0.01)
 
     for node in list_of_url:
             blockchain.register_node(node)
-            print("Joined network \n Total Nodes :",blockchain.nodes)
-
-
-    
+            print("\nJoined network, Total Nodes =>",blockchain.nodes,"\n")
 
 
 
+def chain(request):
+    if request.method == 'GET':
 
+        context = {
+            "chain" : blockchain.chain
+        }
+    return render(request, 'Blockchain_App/chain.html', context)
 
-# def full_chain(request):
-#     if request.method == 'GET':
+def dec_chain(request):
+    if request.method == 'GET':
 
-#         response = {
-#                     'length' : len(blockchain.chain), 
-#                     'chain': blockchain.chain,    
-#                     }
-#         context = {
-#             "chain" : blockchain.chain
-#         }
-#     return render(request, 'mainapp/chain.html', context)
-
+        context = {
+            "chain" : blockchain.chain
+        }
+    return render(request, 'Blockchain_App/decrypted_chain.html', context)
 
 def full_chain(request):
     if request.method == 'GET':
@@ -268,7 +251,7 @@ def new_transcations(request):
     if request.method == "POST":
         # values = json.loads(request.body)
         value = request.body
-        # print(type(value))
+        print("\nRECEIVED TRANSACTION REQUEST.....\n")
         
         #_____________________________________***___________decrypting ____________***________________________________________#
         enc_tx_data = json.loads(value.decode())["enc_tx_data"].split("|")
@@ -279,10 +262,10 @@ def new_transcations(request):
             if not i:continue
             dec_tx_data += decryptor.decrypt(binascii.unhexlify(i.encode())).decode()
         values = json.loads(dec_tx_data)
-        # print(values)
-        # values = {}
         
-        print("Time_Recieved >>>>",time.time())
+        for i in tqdm (range (100), desc="Decrypting...", ascii=False, ncols=75):
+            time.sleep(0.001)
+        print("\n")
 
 
         required = ['sender','receiver','amount', 'signature']
@@ -314,22 +297,23 @@ def new_transcations(request):
         a = json.loads(a.decode('utf-8'))
         if a["message"] == "False":
             response = {'message' : "INSEFICIENT BALANCE"}
-            print("INSEFICIENT BALANCE")
+            print("INSEFICIENT BALANCE ERROR")
             return JsonResponse(response)
         
         else:    
-            print(values['signature'])
+
             sender = values['sender']
             index = blockchain.new_transaction(values['sender'], values['receiver'], values['amount'],values['signature'])
             tx_no = len(blockchain.current_transactions)
-            print(blockchain.current_transactions)
             
             mine(sender, enc_tx_data)
             
-            response = {'message' : f'Your Trasaction will be added to Block {index} as {tx_no} transaction'}
+            response = {'message' : f'Your Trasaction is added to Block {index} as {tx_no} transaction'}
+            print("\nTransaction added to chain")
+
 
     else: response = {'message' : 'Method Not Allowed'}
-    # response = {'message' : 'Method Not Allowed'}
+
     return JsonResponse(response)
 
 
@@ -372,14 +356,19 @@ def mine(sender, value):
             'proof' : block['proof'],
             'previous_hash' : block['previous_hash'] 
         }
-        print("mined_>>>>>>", time.time())
+        for i in tqdm (range (100), desc="Mining Block...", ascii=False, ncols=75):
+            time.sleep(0.001)
+        print("\n")
         neighbours = blockchain.nodes
         for node in neighbours:
             consensus = requests.get(f'http://{node}/nodes/resolve')
 
 #_____________________________________***_________check for minier_________***________________________________________#
 
-        time.sleep(3)
+        # time.sleep(3)
+        print("\n")
+        for i in tqdm (range (len(blockchain.nodes)), desc="Runing Consensus...", ascii=False, ncols=75):
+            time.sleep(3/len(blockchain.nodes)) 
 
         check = blockchain.chain[-1]
         c_tx = check['transaction']
@@ -394,7 +383,7 @@ def mine(sender, value):
                 
                 
             else: pass
-            print(tx_data)
+            
 
 #_____________________***_________if minier is self: >>>> send transaction request_________***________________________#
         
@@ -404,7 +393,6 @@ def mine(sender, value):
 
 @csrf_exempt
 def register_node(request):
-# def register_node(list_of_url):
     if request.method == "POST":
         print((request.body))
     
@@ -432,13 +420,14 @@ def consensus(request):
         blockchain.current_transactions = []  
         neighbours = blockchain.nodes
         for node in neighbours:
-            response = requests.get(f'http://{node}/chain')
+            response = requests.get(f'http://{node}/fullchain')
         replaced = blockchain.resolve_conflicts()
         response = {
             'message': 'Nodes conflict is resolved',
             'chain': blockchain.chain
         }
-        blockchain.current_transactions = []    
+        blockchain.current_transactions = [] 
+        
     return JsonResponse(response)    
 
 
